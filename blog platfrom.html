@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Insta Blog Platform</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI';
+    color: white;
+}
+
+/* HERO */
+.hero {
+    height: 100vh;
+    background: url('https://images.unsplash.com/photo-1492724441997-5dc865305da7') center/cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.overlay {
+    background: rgba(0,0,0,0.6);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+}
+
+.overlay h1 {
+    font-size: 40px;
+}
+
+.overlay button {
+    padding: 10px 20px;
+    background: #ff00cc;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+}
+
+/* PROFILE */
+.profile {
+    text-align: center;
+    padding: 15px;
+    font-size: 20px;
+    background: linear-gradient(120deg, #ff00cc, #3333ff);
+}
+
+/* FORM */
+.form {
+    padding: 10px;
+    text-align: center;
+    background: linear-gradient(120deg, #ff00cc, #3333ff);
+}
+
+input, textarea {
+    width: 90%;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 10px;
+    border: none;
+}
+
+/* GRID */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    background: linear-gradient(120deg, #ff00cc, #3333ff);
+}
+
+/* CARD */
+.card {
+    background: rgba(255,255,255,0.1);
+    margin: 10px;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+.card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+/* HEART ANIMATION */
+.heart {
+    position: absolute;
+    top: 40%;
+    left: 45%;
+    font-size: 50px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: 0.4s;
+}
+
+.show-heart {
+    opacity: 1;
+    transform: scale(1.5);
+}
+
+.content {
+    padding: 10px;
+}
+
+button {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    margin: 3px;
+    cursor: pointer;
+}
+
+.comment {
+    background: rgba(255,255,255,0.2);
+    margin-top: 5px;
+    padding: 5px;
+    border-radius: 5px;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- HOME PAGE -->
+
+<section class="hero">
+    <div class="overlay">
+        <h1>✨ Blog Platform</h1>
+        <p>Create • Share • Like • Save 💖</p>
+        <button onclick="goToApp()">Start Exploring 🚀</button>
+    </div>
+</section>
+
+<!-- PROFILE -->
+
+<div class="profile">
+    👤 Welcome, <span id="user">User</span>
+    <br>
+    <button onclick="showSaved()">⭐ Saved</button>
+    <button onclick="showAll()">🏠 All</button>
+</div>
+
+<!-- FORM -->
+
+<div class="form">
+    <input id="username" placeholder="Enter name">
+    <button onclick="setUser()">Set Name</button><br>
+
+```
+<input id="title" placeholder="Title">
+<textarea id="content"></textarea>
+<input type="file" id="img">
+<button onclick="addBlog()">Post 🚀</button>
+```
+
+</div>
+
+<!-- BLOGS -->
+
+<div id="blogs" class="grid"></div>
+
+<script>
+let blogs = JSON.parse(localStorage.getItem("blogs")) || [];
+let currentUser = localStorage.getItem("user") || "User";
+document.getElementById("user").innerText = currentUser;
+
+let showSavedOnly = false;
+
+function goToApp(){
+    document.querySelector(".profile").scrollIntoView({
+        behavior: "smooth"
+    });
+}
+
+function setUser(){
+    let u = username.value;
+    if(!u) return;
+    localStorage.setItem("user", u);
+    document.getElementById("user").innerText = u;
+}
+
+function save(){
+    localStorage.setItem("blogs", JSON.stringify(blogs));
+}
+
+function addBlog(){
+    let t=title.value, c=content.value;
+    let file=img.files[0];
+
+    if(!t||!c) return;
+
+    let reader=new FileReader();
+    reader.onload=()=>{
+        blogs.unshift({
+            id: Date.now(),
+            title:t,
+            content:c,
+            image: reader.result,
+            likes:0,
+            saved:false,
+            comments:[]
+        });
+        save(); display();
+    };
+
+    if(file) reader.readAsDataURL(file);
+    else {
+        blogs.unshift({
+            id: Date.now(),
+            title:t,
+            content:c,
+            image:"https://images.unsplash.com/photo-1506744038136",
+            likes:0,
+            saved:false,
+            comments:[]
+        });
+        save(); display();
+    }
+}
+
+function display(){
+    blogs.innerHTML="";
+    blogs.forEach(b=>{
+        if(showSavedOnly && !b.saved) return;
+
+        blogs.innerHTML+=`
+        <div class="card" ondblclick="doubleLike(${b.id}, this)">
+            <img src="${b.image}">
+            <div class="heart">❤️</div>
+
+            <div class="content">
+                <h3>${b.title}</h3>
+                <p>${b.content}</p>
+                <p>❤️ ${b.likes}</p>
+
+                <button onclick="like(${b.id})">❤️</button>
+                <button onclick="toggleSave(${b.id})">⭐</button>
+
+                <input id="c-${b.id}" placeholder="Comment">
+                <button onclick="comment(${b.id})">Add</button>
+
+                ${b.comments.map(c=>`<div class="comment">${c}</div>`).join("")}
+            </div>
+        </div>`;
+    });
+}
+
+function like(id){
+    blogs.forEach(b=>{ if(b.id===id) b.likes++; });
+    save(); display();
+}
+
+function doubleLike(id, el){
+    like(id);
+    let heart = el.querySelector(".heart");
+    heart.classList.add("show-heart");
+    setTimeout(()=>heart.classList.remove("show-heart"),400);
+}
+
+function toggleSave(id){
+    blogs.forEach(b=>{ if(b.id===id) b.saved=!b.saved; });
+    save(); display();
+}
+
+function showSaved(){
+    showSavedOnly = true;
+    display();
+}
+
+function showAll(){
+    showSavedOnly = false;
+    display();
+}
+
+function comment(id){
+    let txt=document.getElementById("c-"+id).value;
+    if(!txt) return;
+    blogs.forEach(b=>{
+        if(b.id===id) b.comments.push(txt);
+    });
+    save(); display();
+}
+
+display();
+</script>
+
+</body>
+</html>
